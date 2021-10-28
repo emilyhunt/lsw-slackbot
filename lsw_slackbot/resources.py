@@ -14,18 +14,19 @@ import subprocess
 from pathlib import Path
 
 
-async def save_resource_usage_dataframe(data_dir: Path, filename: Optional[Union[str, Path]] = None):
-    """Saves resource usage dataframe to the data directory."""
+async def sample_resource_usage(data_dir: Path, filename: Optional[Union[str, Path]] = None,
+                                measurement_time: Union[int, float] = 10):
+    """Samples resource usage and saves it to the data directory."""
     logging.debug("generating a resource usage dataframe")
 
     # Firstly, let's get it
-    dataframe = await get_resource_usage_dataframe()
+    dataframe = await _get_resource_usage_dataframe(measurement_time=measurement_time)
 
     # ... and save it!
     if filename is None:
         filename = data_dir / datetime.datetime.now().strftime("%Y-%m-%d_server_usage.csv")
     else:
-        filename = Path(filename)
+        filename = data_dir / Path(filename)
 
     # Work out if it exists already - this would mean we only want to append to the existing file and without
     # adding new header names
@@ -37,11 +38,12 @@ async def save_resource_usage_dataframe(data_dir: Path, filename: Optional[Union
         header = True
 
     # Save it!
-    dataframe.to_csv(filename, header=header, mode=mode)
+    data_dir.mkdir(exist_ok=True, parents=True)  # Ensures that the directory exists
+    dataframe.to_csv(filename, header=header, mode=mode, index=False)
     logging.debug("resource usage dataframe successfully saved")
 
 
-async def get_resource_usage_dataframe(groupby_username: bool = True, measurement_time: int = 10):
+async def _get_resource_usage_dataframe(groupby_username: bool = True, measurement_time: Union[int, float] = 10):
     """Generates a full resource usage dataframe with usage grouped by user."""
     # Loop over all current processes
     data_dict = {}
@@ -87,7 +89,7 @@ async def get_resource_usage_dataframe(groupby_username: bool = True, measuremen
     return dataframe
 
 
-async def current_resource_use(measurement_time=0.5):
+async def current_resource_use(measurement_time: Union[int, float] = 0.5):
     """Returns a quick summary of current server use - a dict with various stats."""
     logging.debug("taking intermittent resource use measurement")
 
@@ -102,7 +104,9 @@ async def current_resource_use(measurement_time=0.5):
     # Make and return a nice dict!
     return {
         "cpu_percent": np.sum(cpu_use) / len(cpu_use),
-        "free_cores": np.count_nonzero(cpu_use < 1.0),
+        "cores_with_<1%_use": np.count_nonzero(cpu_use < 1.0),
+        "cores_with_<25%_use": np.count_nonzero(cpu_use < 25.0),
+        "cores_with_<50%_use": np.count_nonzero(cpu_use < 50.0),
         "total_cores": len(cpu_use),
         "memory_used": mem_use.used / 1024**3,
         "memory_available": mem_use.available / 1024**3,
@@ -110,22 +114,35 @@ async def current_resource_use(measurement_time=0.5):
     }
 
 
-def _get_cpu_info():
+def _get_cpu_info(required_keys=None):
     """Get CPU info on Linux as a dict (actually hilariously difficult)"""
     # Get a list where each entry is a property we care about
     cpu_info = subprocess.check_output("lscpu", shell=True).strip().decode().split("\n")
 
     cpu_info_dict = {}
     for a_line in cpu_info:
-        key, value = a_line.split(":")
-        cpu_info_dict[key] = value.strip()
+        split_values = a_line.split(":")
+
+        if len(split_values) == 2:
+            key, value = split_values
+            cpu_info_dict[key] = value.strip()
+        elif len(split_values) > 2:
+            key = split_values[0]
+            value = ":".join(split_values[1:])
+            cpu_info_dict[key] = value.strip()
+
+    # We can also add certain keys to the dict to make sure they aren't missing
+    if required_keys is not None:
+        for a_key in required_keys:
+            if a_key not in cpu_info_dict:
+                cpu_info_dict[a_key] = "This information not returned by lscpu!"
 
     return cpu_info_dict
 
 
 def get_system_info():
     """Returns a basic string of system information."""
-    cpu_info = _get_cpu_info()
+    cpu_info = _get_cpu_info(required_keys=('Model name', 'CPU(s)', 'Thread(s) per core'))
 
     return (f"-- SYSTEM INFO --\n"
             f"hostname: {socket.gethostname()}\n"

@@ -10,11 +10,17 @@ from slack_sdk.http_retry.builtin_async_handlers import AsyncRateLimitErrorRetry
 from .util import hello_world, string_time, Periodic
 
 
-# Get Slack token from environment variables (app should always be started like this for security reasons)
+# Get Slack tokens from environment variables (app should always be started like this for security reasons)
 try:
     SLACK_API_TOKEN = os.environ['SLACK_API_TOKEN']
 except KeyError:
-    raise KeyError("Unable to find the Slack API token in set environment variables! Did you start the app correctly?")
+    raise KeyError("Unable to find SLACK_API_TOKEN in set environment variables! Did you start the app correctly?")
+
+try:
+    SLACK_APP_TOKEN = os.environ['SLACK_APP_TOKEN']
+except KeyError:
+    raise KeyError("Unable to find SLACK_APP_TOKEN in set environment variables! Did you start the app correctly?")
+
 
 # Setup logging
 LOGGING_DIR = Path("../logs")
