@@ -28,18 +28,20 @@ async def hello_world(client, channel):
 
 
 class Periodic:
-    def __init__(self, func: callable, time: Union[int, datetime.timedelta], first_run=Optional[datetime.datetime],
+    def __init__(self, func: callable, time_interval: Union[int, datetime.timedelta],
+                 first_run=Optional[datetime.datetime],
                  args: Union[tuple, list] = tuple(), kwargs: dict = tuple()):
         """This class acts as a simple way to schedule tasks with asyncio. See the following StackOverflow answer for
         how it works: https://stackoverflow.com/a/37514633/12709989
         """
-        if isinstance(time, datetime.timedelta):
-            time = time.total_seconds()
-        elif not isinstance(time, int):
+        # Ensure time_interval is a datetime.timedelta object
+        if isinstance(time_interval, int):
+            time_interval = datetime.timedelta(seconds=time_interval)
+        elif not isinstance(time_interval, datetime.timedelta):
             raise ValueError("periodic time for scheduling must be an int or a datetime.timedelta object.")
 
         self.func = func
-        self.time = time
+        self.time_interval = time_interval
         self.is_started = False
         self._task = None
         self.first_run = first_run
@@ -76,10 +78,30 @@ class Periodic:
             # the end of asyncio.sleep() could take a while to be unblocked. However, that's just an unavoidable
             # side-effect, and in heavy load scenarios, you probably don't want to have all time taken up by periodic
             # tasks anyway... ;) )
-            next_run = datetime.datetime.now() + datetime.timedelta(seconds=self.time)
+            next_run = datetime.datetime.now() + self.time_interval
             self.func(*self.args, **self.kwargs)
 
             # Sleep!
             sleep_time = (next_run - datetime.datetime.now()).total_seconds()
             if sleep_time > 0:
                 await asyncio.sleep(sleep_time)
+
+
+class Scheduled(Periodic):
+    def __init__(self, func: callable, first_run: datetime.datetime, time_interval: Union[int, datetime.timedelta],
+                 args: Union[tuple, list] = tuple(), kwargs: dict = tuple()):
+        """This class inherits from Periodic, and runs tasks in a slightly different way (i.e. scheduled at a set time
+        interval instead of being every n seconds. Ideal for very rarely occuring tasks that ought to happen at
+        e.g. the same time every day."""
+        super().__init__(func, time_interval, first_run, args, kwargs)
+
+    def _calculate_seconds_to_next_run(self):
+        """Gets the next possible run time!"""
+        first_to_now = (datetime.datetime.now() - self.first_run).total_seconds()
+        intervals_to_add = int(first_to_now // self.time_interval.total_seconds() + 1)
+        return (self.first_run + intervals_to_add * self.time_interval).total_seconds()
+
+    async def _run(self):
+        while True:
+            await asyncio.sleep(self._calculate_seconds_to_next_run())
+            self.func(*self.args, *self.kwargs)
