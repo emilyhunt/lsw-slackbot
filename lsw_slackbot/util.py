@@ -29,8 +29,8 @@ async def hello_world(client, channel):
 
 class Periodic:
     def __init__(self, func: callable, time_interval: Union[int, datetime.timedelta],
-                 first_run=Optional[datetime.datetime],
-                 args: Union[tuple, list] = tuple(), kwargs: dict = tuple()):
+                 first_run: Optional[datetime.datetime] = None,
+                 args: Union[tuple, list] = tuple(), kwargs: Optional[dict] = None):
         """This class acts as a simple way to schedule tasks with asyncio. See the following StackOverflow answer for
         how it works: https://stackoverflow.com/a/37514633/12709989
         """
@@ -47,7 +47,11 @@ class Periodic:
         self.first_run = first_run
 
         self.args = args
-        self.kwargs = kwargs
+
+        if kwargs is None:
+            self.kwargs = {}
+        else:
+            self.kwargs = kwargs
 
     async def start(self):
         if not self.is_started:
@@ -87,19 +91,62 @@ class Periodic:
                 await asyncio.sleep(sleep_time)
 
 
+_POSSIBLE_DATETIME_KWARGS = ("year", "month", "day", "hour", "minute", "second", "microsecond")
+
+
 class Scheduled(Periodic):
-    def __init__(self, func: callable, first_run: datetime.datetime, time_interval: Union[int, datetime.timedelta],
+    def __init__(self, func: callable, first_run: Union[datetime.datetime, dict],
+                 time_interval: Union[int, datetime.timedelta],
                  args: Union[tuple, list] = tuple(), kwargs: dict = tuple()):
         """This class inherits from Periodic, and runs tasks in a slightly different way (i.e. scheduled at a set time
         interval instead of being every n seconds. Ideal for very rarely occuring tasks that ought to happen at
         e.g. the same time every day."""
+        # If first_run is a dict of datetime parameters, then we set first_run based on this
+        if isinstance(first_run, dict):
+            first_run = self.dict_to_first_run_datetime(first_run)
+        elif not isinstance(first_run, datetime.datetime):
+            raise ValueError("first_run must be a datetime or a dict that can be used to setup a datetime!")
+
         super().__init__(func, time_interval, first_run, args, kwargs)
+
+    @staticmethod
+    def dict_to_first_run_datetime(first_run_dict):
+        now = datetime.datetime.now()
+        now_tuple = (now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond)
+
+        smallest_defined_time_interval_index = Scheduled.get_smallest_defined_time_interval(first_run_dict)
+        parameters_from_now_to_use = _POSSIBLE_DATETIME_KWARGS[:smallest_defined_time_interval_index]
+
+        first_run_dict_final = {
+            k: v for k, v in zip(parameters_from_now_to_use, now_tuple[:smallest_defined_time_interval_index])}
+        first_run_dict_final.update(first_run_dict)
+
+        return datetime.datetime(**first_run_dict_final)
+
+    @staticmethod
+    def get_smallest_defined_time_interval(first_run_dict):
+        for i, a_parameter in enumerate(_POSSIBLE_DATETIME_KWARGS[::-1]):
+            if a_parameter in first_run_dict:
+                # Deal with the fact that we always have to at least assign a year, month and day at minimum
+                if i < 3:
+                    return 3
+                else:
+                    return i
+
+        raise ValueError("no valid time definitions were found in the first_run dictionary specifier!")
 
     def _calculate_seconds_to_next_run(self):
         """Gets the next possible run time!"""
-        first_to_now = (datetime.datetime.now() - self.first_run).total_seconds()
+        now = datetime.datetime.now()
+        first_to_now = (now - self.first_run).total_seconds()
         intervals_to_add = int(first_to_now // self.time_interval.total_seconds() + 1)
-        return (self.first_run + intervals_to_add * self.time_interval).total_seconds()
+        seconds_to_next_run = ((self.first_run + intervals_to_add * self.time_interval) - now).total_seconds()
+
+        # Extra check just in case we ended up with a negative wait time
+        if seconds_to_next_run < 0:
+            return 0.0
+        else:
+            return seconds_to_next_run
 
     async def _run(self):
         while True:
