@@ -39,7 +39,7 @@ async def sample_resource_usage(data_dir: Path, filename: Optional[Union[str, Pa
 
     # Save it!
     data_dir.mkdir(exist_ok=True, parents=True)  # Ensures that the directory exists
-    dataframe.to_csv(filename, header=header, mode=mode, index=False)
+    dataframe.to_csv(filename, header=header, mode=mode, index=True)
     logging.debug("resource usage dataframe successfully saved")
 
 

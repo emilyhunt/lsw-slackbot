@@ -1,1 +1,1 @@
-from .main import client
+from .main import client_loop

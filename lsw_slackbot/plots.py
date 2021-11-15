@@ -57,7 +57,6 @@ async def plot_resource_use(data_location: Path, output_location: Path,
                             aggregation_level: Optional[str] = None,
                             default_tick_format_string: str = "%Y.%m.%d %H:%M", dpi=300):
     """Function for plotting resource usage in a certain timeframe and dumping this information to a file."""
-    logging.info("Generating a resource usage plot")
     logging.debug(f"  plot is within range\n  start time: {start_time}\n  end time: {end_time}")
 
     # Read in the data
@@ -226,3 +225,5 @@ async def plot_resource_use(data_location: Path, output_location: Path,
     fig.subplots_adjust(hspace=0.05, wspace=0.35)
     fig.savefig(output_location, bbox_inches="tight", facecolor="w")
     plt.close(fig)
+
+    return output_location

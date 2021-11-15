@@ -1,30 +1,12 @@
-import socket
 import asyncio
-import logging
 import datetime
 from typing import Union, Optional
 
-from slack_sdk.errors import SlackApiError
 from contextlib import suppress
 
 
 def string_time():
     return datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S")
-
-
-async def hello_world(client, channel):
-    """Basic function to post an init message to a channel."""
-
-    try:
-        system_name = socket.gethostname()
-
-        await client.chat_postMessage(
-            channel=channel,
-            text=f"Server time & date: {string_time()}\nApp is running on system {system_name}."
-        )
-
-    except SlackApiError as e:
-        logging.exception(f"error from slack API when trying to send message: {e.response['error']}")
 
 
 class Periodic:
@@ -57,7 +39,7 @@ class Periodic:
         if not self.is_started:
             self.is_started = True
             # Start task to call func periodically:
-            self._task = asyncio.ensure_future(self._run())
+            self._task = asyncio.create_task(self._run())
 
     async def stop(self):
         if self.is_started:
@@ -83,7 +65,7 @@ class Periodic:
             # side-effect, and in heavy load scenarios, you probably don't want to have all time taken up by periodic
             # tasks anyway... ;) )
             next_run = datetime.datetime.now() + self.time_interval
-            self.func(*self.args, **self.kwargs)
+            await self.func(*self.args, **self.kwargs)
 
             # Sleep!
             sleep_time = (next_run - datetime.datetime.now()).total_seconds()
@@ -151,4 +133,4 @@ class Scheduled(Periodic):
     async def _run(self):
         while True:
             await asyncio.sleep(self._calculate_seconds_to_next_run())
-            self.func(*self.args, *self.kwargs)
+            await self.func(*self.args, *self.kwargs)
