@@ -9,7 +9,7 @@ from slack_sdk.http_retry.builtin_async_handlers import AsyncRateLimitErrorRetry
 
 from .resources import sample_resource_usage
 from .util import string_time, Periodic, Scheduled
-from .slack import hello_world, send_resource_use_plot, _send_message
+from .slack import hello_world, send_resource_use_plot, _send_message, check_memory
 
 # Get Slack tokens from environment variables (app should always be started like this for security reasons)
 try:
@@ -44,7 +44,7 @@ DATA_DIR = Path("./data")
 
 # Setup channels
 CHANNEL_ADMIN = "#computing-admin"
-CHANNEL_GENERAL = "#computing"
+CHANNEL_GENERAL = "#computing-admin"
 
 
 def _get_repeated_tasks(client):
@@ -87,6 +87,12 @@ def _get_repeated_tasks(client):
         first_run=datetime.now() + timedelta(seconds=60),
         args=(client, CHANNEL_ADMIN, f"I have NOT crashed! \o/")))
 
+    tasks.append(Periodic(
+        check_memory, timedelta(seconds=15),
+        args=(client, CHANNEL_ADMIN),
+        kwargs={"memory_warn_fraction": 0.90, "sleep_time": 3600}
+    ))
+
     # Start the tasks!
     return tasks
 
@@ -124,7 +130,6 @@ def client_loop():
 
     # ... & wait for them!
     try:
-        # await asyncio.sleep(3e10)  # Sleep this thread endlessly
         print("Running event loop!")
         asyncio.run(_start_repeated_tasks(tasks))
 

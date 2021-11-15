@@ -89,6 +89,13 @@ async def _get_resource_usage_dataframe(groupby_username: bool = True, measureme
     return dataframe
 
 
+def current_memory_fraction():
+    """Quick function to get a basic fraction of memory being used."""
+    mem_use = psutil.virtual_memory()
+
+    return mem_use.used / mem_use.total
+
+
 async def current_resource_use(measurement_time: Union[int, float] = 0.5):
     """Returns a quick summary of current server use - a dict with various stats."""
     logging.debug("taking intermittent resource use measurement")
