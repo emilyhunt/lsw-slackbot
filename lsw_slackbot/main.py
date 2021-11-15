@@ -52,9 +52,9 @@ def _get_repeated_tasks(client):
     tasks = list()
 
     # Check up on resource use occasionally
-    tasks.append(Periodic(sample_resource_usage, 300,
+    tasks.append(Periodic(sample_resource_usage, 60,
                           args=(DATA_DIR,),
-                          kwargs={"measurement_time": 30}))
+                          kwargs={"measurement_time": 55}))
 
     # Send a resource usage plot to the main channel, with everything from the past day
     tasks.append(Scheduled(
