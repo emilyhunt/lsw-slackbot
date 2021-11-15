@@ -82,15 +82,15 @@ def _get_repeated_tasks(client):
                "aggregation_level": "hour"}),
         kwargs={"title": "Resource usage in the past week!"}))
 
-    tasks.append(Periodic(
-        _send_message, timedelta(hours=1),
-        first_run=datetime.now() + timedelta(seconds=60),
-        args=(client, CHANNEL_ADMIN, f"I have NOT crashed! \o/")))
+    # tasks.append(Periodic(
+    #     _send_message, timedelta(hours=1),
+    #     first_run=datetime.now() + timedelta(seconds=60),
+    #     args=(client, CHANNEL_ADMIN, f"I have NOT crashed! \o/")))
 
     tasks.append(Periodic(
         check_memory, timedelta(seconds=15),
         args=(client, CHANNEL_ADMIN),
-        kwargs={"memory_warn_fraction": 0.90, "sleep_time": 3600}
+        kwargs={"memory_warn_fraction": 0.90, "sleep_time": 600}
     ))
 
     # Start the tasks!
