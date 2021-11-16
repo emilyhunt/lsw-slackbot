@@ -67,7 +67,8 @@ async def _read_resource_files(data_location: Path, start_time: datetime, end_ti
 async def plot_resource_use(data_location: Path, output_location: Path,
                             start_time: datetime, end_time: Optional[datetime] = None,
                             aggregation_level: Optional[str] = None,
-                            default_tick_format_string: str = "%Y.%m.%d %H:%M", dpi=300,
+                            default_tick_format_string: str = "%Y.%m.%d %H:%M",
+                            tick_format_string_overwrite: Optional[str] = None, dpi=300,
                             processes_to_treat_as_root: Optional[Union[tuple, list]] = None):
     """Function for plotting resource usage in a certain timeframe and dumping this information to a file."""
     logging.debug(f"  plot is within range\n  start time: {start_time}\n  end time: {end_time}")
@@ -156,6 +157,10 @@ async def plot_resource_use(data_location: Path, output_location: Path,
         else:
             raise ValueError(f"specified aggregation level {aggregation_level} not recognised! Must be one of "
                              f"minute, hour, day, week, month or year.")
+
+        # Also allow the user to overwrite the default format string!
+        if tick_format_string_overwrite is not None:
+            tick_format_string = tick_format_string_overwrite
 
         # Assign the unique number of times here as our unique_times (this will later be our x values)
         unique_times = np.unique(unique_times_aggregated)

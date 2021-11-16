@@ -69,7 +69,8 @@ def _get_repeated_tasks(client):
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(hours=32),
                "aggregation_level": "minute",
-               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT}),
+               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
+               "tick_format_string_overwrite": "%a %H:%M"}),
         kwargs={"title": "Test plot! Here's resource usage in the last 32 hours."}))
 
     # Send a resource usage plot to the main channel, with everything from the past day
@@ -83,8 +84,9 @@ def _get_repeated_tasks(client):
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(hours=32),
                "aggregation_level": "minute",
-               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT}),
-        kwargs={"title": "Resource usage in the past 32 hours!"}))
+               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
+               "tick_format_string_overwrite": "%a %H:%M"}),
+        kwargs={"title": "Good morning! Here's the server's resource usage from the past 32 hours."}))
 
     # Send a resource usage plot to the main channel, everything from past week
     tasks.append(Scheduled(
@@ -97,8 +99,9 @@ def _get_repeated_tasks(client):
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(days=7, hours=7),
                "aggregation_level": "hour",
-               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT}),
-        kwargs={"title": "Resource usage in the past week!",}))
+               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
+               "tick_format_string_overwrite": "%a %d"}),
+        kwargs={"title": "Happy Monday! Here's how much the server was used last week."}))
 
     # tasks.append(Periodic(
     #     _send_message, timedelta(hours=1),
