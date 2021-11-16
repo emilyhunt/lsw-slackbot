@@ -46,6 +46,9 @@ DATA_DIR.mkdir(exist_ok=True)
 CHANNEL_ADMIN = "#computing-admin"
 CHANNEL_GENERAL = "#computing-admin"
 
+# Plot option to treat various different things as still being owned by "root"
+PROCESSES_TO_TREAT_AS_ROOT = ("Debian-gdm", "avahi", "colord", "messagebus", "rtkit", "systemd-timesync")
+
 
 def _get_repeated_tasks(client):
     """Returns a runnable list of asynchronous tasks to use."""
@@ -64,7 +67,8 @@ def _get_repeated_tasks(client):
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(hours=32),
-               "aggregation_level": "minute"}),
+               "aggregation_level": "minute",
+               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT}),
         kwargs={"title": "Resource usage in the past 32 hours!"}))
 
     # Send a resource usage plot to the main channel, with everything from the past day
@@ -77,7 +81,8 @@ def _get_repeated_tasks(client):
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(hours=32),
-               "aggregation_level": "minute"}),
+               "aggregation_level": "minute",
+               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT}),
         kwargs={"title": "Resource usage in the past 32 hours!"}))
 
     # Send a resource usage plot to the main channel, everything from past week
@@ -90,8 +95,9 @@ def _get_repeated_tasks(client):
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(days=7, hours=7),
-               "aggregation_level": "hour"}),
-        kwargs={"title": "Resource usage in the past week!"}))
+               "aggregation_level": "hour",
+               "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT}),
+        kwargs={"title": "Resource usage in the past week!",}))
 
     # tasks.append(Periodic(
     #     _send_message, timedelta(hours=1),

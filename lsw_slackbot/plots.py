@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,8 @@ import matplotlib.dates as mdates
 from matplotlib import gridspec
 
 
-async def _read_resource_files(data_location: Path, start_time: datetime, end_time: Optional[datetime] = None):
+async def _read_resource_files(data_location: Path, start_time: datetime, end_time: Optional[datetime] = None,
+                               processes_to_treat_as_root: Optional[Union[tuple, list]] = None):
     """Function for automatically checking the data location and reading in requisite files."""
     if end_time is not None:
         if end_time <= start_time:
@@ -49,19 +50,26 @@ async def _read_resource_files(data_location: Path, start_time: datetime, end_ti
         valid_measurements = np.logical_and(dataframe['time'] <= end_time, valid_measurements)
     dataframe = dataframe.loc[valid_measurements].reset_index(drop=True)
 
+    # Fold some processes as being root processes if necessary
+    if processes_to_treat_as_root is not None:
+        to_replace = np.isin(dataframe['username'], processes_to_treat_as_root)
+        dataframe['username'] = np.where(to_replace, "root", dataframe['username'])
+
     return dataframe
 
 
 async def plot_resource_use(data_location: Path, output_location: Path,
                             start_time: datetime, end_time: Optional[datetime] = None,
                             aggregation_level: Optional[str] = None,
-                            default_tick_format_string: str = "%Y.%m.%d %H:%M", dpi=300):
+                            default_tick_format_string: str = "%Y.%m.%d %H:%M", dpi=300,
+                            processes_to_treat_as_root: Optional[Union[tuple, list]] = None):
     """Function for plotting resource usage in a certain timeframe and dumping this information to a file."""
     logging.debug(f"  plot is within range\n  start time: {start_time}\n  end time: {end_time}")
 
     # Read in the data
     logging.debug("fetching files")
-    dataframe = await _read_resource_files(data_location, start_time, end_time=end_time)
+    dataframe = await _read_resource_files(data_location, start_time, end_time=end_time,
+                                           processes_to_treat_as_root=processes_to_treat_as_root)
 
     # Make a dataframe grouped by time - this is the total usage at every sampled step
     logging.debug("manipulating dataframe and plotting")
@@ -173,7 +181,7 @@ async def plot_resource_use(data_location: Path, output_location: Path,
     #   either a) use the middle value or b) make a stacked bar chart instead. Maybe I could add a kwarg for this? Since
     #   both may be useful in different circumstances.
     for an_ax, a_type in zip(ax[0:2], ("cpu_percent", "memory")):
-        an_ax.plot(unique_times, dataframe_by_time[a_type], "k-", label="total")
+        an_ax.plot(unique_times, dataframe_by_time[a_type], "k-", label="total", lw=1)
 
         y_users = [user_dataframes[x][a_type] for x in unique_users]
         an_ax.stackplot(unique_times, *y_users, labels=unique_users, alpha=1.0)
@@ -223,7 +231,7 @@ async def plot_resource_use(data_location: Path, output_location: Path,
 
     # Saving
     fig.subplots_adjust(hspace=0.05, wspace=0.35)
-    fig.savefig(output_location, bbox_inches="tight", facecolor="w")
+    fig.savefig(output_location, bbox_inches="tight", facecolor="w", dpi=dpi)
     plt.close(fig)
 
     return output_location
