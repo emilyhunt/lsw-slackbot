@@ -55,6 +55,12 @@ async def _read_resource_files(data_location: Path, start_time: datetime, end_ti
         to_replace = np.isin(dataframe['username'], processes_to_treat_as_root)
         dataframe['username'] = np.where(to_replace, "root", dataframe['username'])
 
+        # Re-combine all of the root processes that are with the same username & time
+        dataframe = (dataframe
+                     .groupby(["username", "time"])
+                     .agg({"cpu_percent": "sum", "memory": "sum", "threads": sum})
+                     .reset_index())
+
     return dataframe
 
 
