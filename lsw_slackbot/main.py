@@ -59,17 +59,18 @@ def _get_repeated_tasks(client):
                           args=(DATA_DIR,),
                           kwargs={"measurement_time": 55}))
 
+    # Todo I should make a RunOnce handler with the same format as Periodic and Scheduled!
     tasks.append(Periodic(
         send_resource_use_plot,
-        120,
+        timedelta(days=10000),
         args=(client,
-              CHANNEL_GENERAL,
+              CHANNEL_ADMIN,
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(hours=32),
                "aggregation_level": "minute",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT}),
-        kwargs={"title": "Resource usage in the past 32 hours!"}))
+        kwargs={"title": "Test plot! Here's resource usage in the last 32 hours."}))
 
     # Send a resource usage plot to the main channel, with everything from the past day
     tasks.append(Scheduled(
