@@ -37,10 +37,10 @@ logging.basicConfig(
 # Todo: add these to config file reading later instead
 # Setup other directories
 TEMP_DIR = Path("./temp")
-# TEMP_DIR.mkdir(exist_ok=True)
+TEMP_DIR.mkdir(exist_ok=True)
 
 DATA_DIR = Path("./data")
-# DATA_DIR.mkdir(exist_ok=True)
+DATA_DIR.mkdir(exist_ok=True)
 
 # Setup channels
 CHANNEL_ADMIN = "#computing-admin"
@@ -55,6 +55,17 @@ def _get_repeated_tasks(client):
     tasks.append(Periodic(sample_resource_usage, 60,
                           args=(DATA_DIR,),
                           kwargs={"measurement_time": 55}))
+
+    tasks.append(Periodic(
+        send_resource_use_plot,
+        120,
+        args=(client,
+              CHANNEL_GENERAL,
+              {"data_location": DATA_DIR,
+               "output_location": TEMP_DIR / "resources.png",
+               "start_time": datetime.now() - timedelta(hours=32),
+               "aggregation_level": "minute"}),
+        kwargs={"title": "Resource usage in the past 32 hours!"}))
 
     # Send a resource usage plot to the main channel, with everything from the past day
     tasks.append(Scheduled(
