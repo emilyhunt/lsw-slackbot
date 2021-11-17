@@ -71,7 +71,8 @@ def _get_repeated_tasks(client):
                "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %H:%M",
-               "minimum_resources_to_plot": (1, 0.1)}),
+               "minimum_resources_to_plot": (1, 0.1),
+               "memory_aggregation_mode": "max"}),
         kwargs={"title": "Test plot! Here's resource usage in the last 32 hours."}))
 
     # Send a resource usage plot to the main channel, with everything from the past day
@@ -87,7 +88,8 @@ def _get_repeated_tasks(client):
                "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %H:%M",
-               "minimum_resources_to_plot": (1, 0.1)}),
+               "minimum_resources_to_plot": (1, 0.1),
+               "memory_aggregation_mode": "max"}),
         kwargs={"title": "Good morning! Here's the server's resource usage from the past 32 hours."}))
 
     # Send a resource usage plot to the main channel, everything from past week
@@ -103,7 +105,8 @@ def _get_repeated_tasks(client):
                "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %d",
-               "minimum_resources_to_plot": (1, 0.1)}),
+               "minimum_resources_to_plot": (1, 0.1),
+               "memory_aggregation_mode": "max"}),
         kwargs={"title": "Happy Monday! Here's how much the server was used last week."}))
 
     # tasks.append(Periodic(

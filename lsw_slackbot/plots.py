@@ -70,7 +70,8 @@ async def plot_resource_use(data_location: Path, output_location: Path,
                             default_tick_format_string: str = "%Y.%m.%d %H:%M",
                             tick_format_string_overwrite: Optional[str] = None, dpi=300,
                             processes_to_treat_as_root: Optional[Union[tuple, list]] = None,
-                            minimum_resources_to_plot=(0.0, 0.0)):
+                            minimum_resources_to_plot: Union[tuple, list] = (0.0, 0.0),
+                            memory_aggregation_mode="mean", cpu_aggregation_mode="mean"):
     """Function for plotting resource usage in a certain timeframe and dumping this information to a file."""
     logging.debug(f"  plot is within range\n  start time: {start_time}\n  end time: {end_time}")
 
@@ -184,13 +185,14 @@ async def plot_resource_use(data_location: Path, output_location: Path,
 
         # Next, we need to aggregate everything we want to plot later by these aggregated times
         dataframe_by_time["time"] = unique_times_aggregated
+
         dataframe_by_time = dataframe_by_time.groupby("time").agg({
-            "cpu_percent": "mean", "memory": "mean", "threads": "mean"})
+            "cpu_percent": cpu_aggregation_mode, "memory": memory_aggregation_mode, "threads": "mean"})
 
         for a_user in unique_users:
             user_dataframes[a_user]["time"] = unique_times_aggregated
             user_dataframes[a_user] = user_dataframes[a_user].groupby("time").agg({
-                "cpu_percent": "mean", "memory": "mean", "threads": "mean"})
+                "cpu_percent": cpu_aggregation_mode, "memory": memory_aggregation_mode, "threads": "mean"})
 
     else:
         tick_format_string = default_tick_format_string
@@ -227,8 +229,9 @@ async def plot_resource_use(data_location: Path, output_location: Path,
 
     # Beautification
     ax[0].legend(edgecolor="k", framealpha=1.0, fontsize="x-small",)  #loc="center left", bbox_to_anchor=(1.1, -0.01), )
-    ax[0].set(ylabel="CPU usage (%)")
-    ax[1].set(xlabel="Time", ylabel="Memory use (GB)", xlim=(np.min(unique_times), np.max(unique_times)))
+    ax[0].set(ylabel=cpu_aggregation_mode.capitalize() + "CPU usage (%)")
+    ax[1].set(xlabel="Time", ylabel=memory_aggregation_mode.capitalize() + "memory use (GB)",
+              xlim=(np.min(unique_times), np.max(unique_times)))
     ax[2].set(ylabel="Total CPU usage (%)")
     ax[3].set(xlabel="User", ylabel="Total memory usage (%)")
 
