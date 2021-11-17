@@ -194,6 +194,23 @@ async def plot_resource_use(data_location: Path, output_location: Path,
             user_dataframes[a_user] = user_dataframes[a_user].groupby("time").agg({
                 "cpu_percent": cpu_aggregation_mode, "memory": memory_aggregation_mode, "threads": "mean"})
 
+        # In the case of max aggregation modes, ensure that the plotted values add up to the true maximum (and not an
+        # instantaneous maximum.) This is a bit of a hack to make sure that the total line and the user lines line up.
+        # This happens because users will have max memory uses at different types, but the *total* max memory won't
+        # always be when all users had their maximum.
+        for a_mode, a_type in zip((cpu_aggregation_mode, memory_aggregation_mode), ("cpu_percent", "memory")):
+            if a_mode == "max":
+                real_maximums = dataframe_by_time[a_type]
+
+                user_maximums = np.zeros(len(real_maximums))
+                for a_user in unique_users:
+                    user_maximums += user_dataframes[a_user][a_type].to_numpy()
+
+                normalisation_constant = real_maximums / user_maximums
+
+                for a_user in unique_users:
+                    user_dataframes[a_user][a_type] *= normalisation_constant
+
     else:
         tick_format_string = default_tick_format_string
 
@@ -229,8 +246,8 @@ async def plot_resource_use(data_location: Path, output_location: Path,
 
     # Beautification
     ax[0].legend(edgecolor="k", framealpha=1.0, fontsize="x-small",)  #loc="center left", bbox_to_anchor=(1.1, -0.01), )
-    ax[0].set(ylabel=cpu_aggregation_mode.capitalize() + "CPU usage (%)")
-    ax[1].set(xlabel="Time", ylabel=memory_aggregation_mode.capitalize() + "memory use (GB)",
+    ax[0].set(ylabel=cpu_aggregation_mode.capitalize() + " CPU usage (%)")
+    ax[1].set(xlabel="Time", ylabel=memory_aggregation_mode.capitalize() + " memory use (GB)",
               xlim=(np.min(unique_times), np.max(unique_times)))
     ax[2].set(ylabel="Total CPU usage (%)")
     ax[3].set(xlabel="User", ylabel="Total memory usage (%)")
