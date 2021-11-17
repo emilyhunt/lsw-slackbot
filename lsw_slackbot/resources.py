@@ -63,7 +63,7 @@ async def _get_resource_usage_dataframe(groupby_username: bool = True, measureme
     await asyncio.sleep(measurement_time)
 
     # Now, we can loop for real!
-    n_cores = psutil.cpu_count()
+    n_cores = psutil.cpu_count(logical=False)
     for i, a_process in enumerate(psutil.process_iter()):
 
         try:

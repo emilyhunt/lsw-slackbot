@@ -69,7 +69,8 @@ async def plot_resource_use(data_location: Path, output_location: Path,
                             aggregation_level: Optional[str] = None,
                             default_tick_format_string: str = "%Y.%m.%d %H:%M",
                             tick_format_string_overwrite: Optional[str] = None, dpi=300,
-                            processes_to_treat_as_root: Optional[Union[tuple, list]] = None):
+                            processes_to_treat_as_root: Optional[Union[tuple, list]] = None,
+                            minimum_resources_to_plot=(0.0, 0.0)):
     """Function for plotting resource usage in a certain timeframe and dumping this information to a file."""
     logging.debug(f"  plot is within range\n  start time: {start_time}\n  end time: {end_time}")
 
@@ -77,6 +78,18 @@ async def plot_resource_use(data_location: Path, output_location: Path,
     logging.debug("fetching files")
     dataframe = await _read_resource_files(data_location, start_time, end_time=end_time,
                                            processes_to_treat_as_root=processes_to_treat_as_root)
+
+    # Firstly, contemplate dropping users if they never cross the minimum resource usage threshold
+    if minimum_resources_to_plot[0] > 0 and minimum_resources_to_plot[1] > 0:
+        # Aggregate all datapoints by user & maximum
+        dataframe_by_user = dataframe.groupby("username").agg({"cpu_percent": "max"}, {"memory": "max"}).reset_index()
+
+        # Remove users whose max datapoint isn't above the minimum allowed value
+        good_users = np.logical_or(dataframe_by_user['cpu_percent'] > minimum_resources_to_plot[0],
+                                   dataframe_by_user['memory'] > minimum_resources_to_plot[1])
+        users_to_keep = dataframe_by_user.loc[good_users, 'username'].to_numpy()
+
+        dataframe = dataframe.loc[np.isin(dataframe['username'], users_to_keep)].reset_index(drop=True)
 
     # Make a dataframe grouped by time - this is the total usage at every sampled step
     logging.debug("manipulating dataframe and plotting")
@@ -119,6 +132,10 @@ async def plot_resource_use(data_location: Path, output_location: Path,
         }
 
     total_usage = pd.DataFrame(total_usage).T.reset_index()
+
+    # Convert these to normalised percents
+    total_usage['cpu_use_normed_percent'] = total_usage['cpu_hours'] / total_usage['cpu_hours'].sum() * 100
+    total_usage['memory_use_normed_percent'] = total_usage['memory_hours'] / total_usage['memory_hours'].sum() * 100
 
     # Aggregate the data if necessary
     if aggregation_level is not None:
@@ -201,7 +218,7 @@ async def plot_resource_use(data_location: Path, output_location: Path,
         an_ax.grid(which="major", alpha=0.4, axis="y")
 
     # Plot total usage bar charts
-    for an_ax, a_type in zip(ax[2:], ("cpu_hours", "memory_hours")):
+    for an_ax, a_type in zip(ax[2:], ("cpu_use_normed_percent", "memory_use_normed_percent")):
         for i in range(len(unique_users)):
             an_ax.bar(i, total_usage.loc[i, a_type])
         an_ax.set_xticks(np.arange(len(unique_users)))
@@ -212,8 +229,8 @@ async def plot_resource_use(data_location: Path, output_location: Path,
     ax[0].legend(edgecolor="k", framealpha=1.0, fontsize="x-small",)  #loc="center left", bbox_to_anchor=(1.1, -0.01), )
     ax[0].set(ylabel="CPU usage (%)")
     ax[1].set(xlabel="Time", ylabel="Memory use (GB)", xlim=(np.min(unique_times), np.max(unique_times)))
-    ax[2].set(ylabel="Total CPU hours (GHz hour)")
-    ax[3].set(xlabel="User", ylabel="Total memory hours (GB hour)")
+    ax[2].set(ylabel="Total CPU usage (%)")
+    ax[3].set(xlabel="User", ylabel="Total memory usage (%)")
 
     if end_time is None:
         end_time = datetime.now()
