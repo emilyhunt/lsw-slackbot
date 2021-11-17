@@ -82,7 +82,7 @@ async def plot_resource_use(data_location: Path, output_location: Path,
     # Firstly, contemplate dropping users if they never cross the minimum resource usage threshold
     if minimum_resources_to_plot[0] > 0 and minimum_resources_to_plot[1] > 0:
         # Aggregate all datapoints by user & maximum
-        dataframe_by_user = dataframe.groupby("username").agg({"cpu_percent": "max"}, {"memory": "max"}).reset_index()
+        dataframe_by_user = dataframe.groupby("username").agg({"cpu_percent": "max", "memory": "max"}).reset_index()
 
         # Remove users whose max datapoint isn't above the minimum allowed value
         good_users = np.logical_or(dataframe_by_user['cpu_percent'] > minimum_resources_to_plot[0],
