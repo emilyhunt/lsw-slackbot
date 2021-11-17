@@ -68,7 +68,7 @@ def _get_repeated_tasks(client):
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(hours=32),
-               "aggregation_level": "minute",
+               "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %H:%M"}),
         kwargs={"title": "Test plot! Here's resource usage in the last 32 hours."}))
@@ -83,7 +83,7 @@ def _get_repeated_tasks(client):
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
                "start_time": datetime.now() - timedelta(hours=32),
-               "aggregation_level": "minute",
+               "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %H:%M"}),
         kwargs={"title": "Good morning! Here's the server's resource usage from the past 32 hours."}))
