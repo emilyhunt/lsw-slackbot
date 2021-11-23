@@ -18,8 +18,14 @@ async def _send_message(client, channel: str, message: str):
     try:
         await client.chat_postMessage(channel=channel, text=message)
 
+    # Handle various different errors, *some* of which are non-critical...
     except SlackApiError as e:
         logging.exception(f"error from slack API when trying to send message: {e.response['error']}")
+        print("Encountered SlackApiError when trying to send message (see logs.)")
+
+    except AttributeError:
+        logging.exception("suspected issue in Slack API when trying to send message. This bug has occured before!")
+        print("Encountered AttributeError when trying to send message (see logs.)")
 
 
 async def _send_file(client, channel: str, file: Union[Path, str], title):
@@ -31,8 +37,14 @@ async def _send_file(client, channel: str, file: Union[Path, str], title):
     try:
         await client.files_upload(channels=channel, file=file, title=title)
 
+    # Handle various different errors, *some* of which are non-critical...
     except SlackApiError as e:
-        logging.exception(f"error from slack API when trying to upload file: {e.response['error']}")
+        logging.exception(f"error from Slack API when trying to upload file: {e.response['error']}")
+        print("Encountered SlackApiError when trying to upload file (see logs.)")
+
+    except AttributeError:
+        logging.exception("suspected issue in Slack API when trying to upload file. This bug has occured before!")
+        print("Encountered AttributeError when trying to upload file (see logs.)")
 
 
 async def hello_world(client, channel: str):
