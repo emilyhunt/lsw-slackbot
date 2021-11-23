@@ -65,7 +65,7 @@ async def _read_resource_files(data_location: Path, start_time: datetime, end_ti
 
 
 async def plot_resource_use(data_location: Path, output_location: Path,
-                            start_time: datetime, end_time: Optional[datetime] = None,
+                            start_time: Union[datetime, timedelta], end_time: Optional[datetime] = None,
                             aggregation_level: Optional[str] = None,
                             default_tick_format_string: str = "%Y.%m.%d %H:%M",
                             tick_format_string_overwrite: Optional[str] = None, dpi=300,
@@ -73,6 +73,10 @@ async def plot_resource_use(data_location: Path, output_location: Path,
                             minimum_resources_to_plot: Union[tuple, list] = (0.0, 0.0),
                             memory_aggregation_mode="mean", cpu_aggregation_mode="mean"):
     """Function for plotting resource usage in a certain timeframe and dumping this information to a file."""
+    # Process start_time if it's a timedelta
+    if isinstance(start_time, timedelta):
+        start_time = datetime.now() - start_time
+
     logging.debug(f"  plot is within range\n  start time: {start_time}\n  end time: {end_time}")
 
     # Read in the data

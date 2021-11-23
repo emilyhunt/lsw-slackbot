@@ -43,8 +43,8 @@ DATA_DIR = Path("./data")
 DATA_DIR.mkdir(exist_ok=True)
 
 # Setup channels
-CHANNEL_ADMIN = "#computing-admin"
-CHANNEL_GENERAL = "#computing-admin"
+CHANNEL_ADMIN = "#exoserver-admin"
+CHANNEL_GENERAL = "#exoserver"
 
 # Plot option to treat various different things as still being owned by "root"
 PROCESSES_TO_TREAT_AS_ROOT = ("Debian-gdm", "avahi", "colord", "messagebus", "rtkit", "systemd-timesync")
@@ -67,7 +67,7 @@ def _get_repeated_tasks(client):
               CHANNEL_ADMIN,
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
-               "start_time": datetime.now() - timedelta(hours=32),
+               "start_time": timedelta(hours=32),
                "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %H:%M",
@@ -84,24 +84,24 @@ def _get_repeated_tasks(client):
               CHANNEL_GENERAL,
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
-               "start_time": datetime.now() - timedelta(hours=32),
+               "start_time": timedelta(hours=56),
                "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %H:%M",
                "minimum_resources_to_plot": (1, 0.1),
                "memory_aggregation_mode": "max"}),
-        kwargs={"title": "Good morning! Here's the server's resource usage from the past 32 hours."}))
+        kwargs={"title": "Good morning! Here's the server's resource usage from the past 2 days."}))
 
     # Send a resource usage plot to the main channel, everything from past week
     tasks.append(Scheduled(
         send_resource_use_plot,
-        datetime(year=2021, month=11, day=8, hour=7, minute=59),
+        datetime(year=2021, month=11, day=8, hour=7, minute=30),
         timedelta(days=7),
         args=(client,
               CHANNEL_GENERAL,
               {"data_location": DATA_DIR,
                "output_location": TEMP_DIR / "resources.png",
-               "start_time": datetime.now() - timedelta(days=7, hours=7),
+               "start_time": timedelta(days=7, hours=7, minutes=30),
                "aggregation_level": "hour",
                "processes_to_treat_as_root": PROCESSES_TO_TREAT_AS_ROOT,
                "tick_format_string_overwrite": "%a %d",
@@ -150,6 +150,7 @@ def client_loop():
     client.retry_handlers.append(AsyncRateLimitErrorRetryHandler(max_retry_count=10))
 
     asyncio.run(hello_world(client, CHANNEL_ADMIN))
+    asyncio.run(hello_world(client, CHANNEL_GENERAL))
 
     # Setup repeated tasks...
     print("Getting tasks...")
