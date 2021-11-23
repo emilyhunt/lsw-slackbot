@@ -150,7 +150,7 @@ def client_loop():
     client.retry_handlers.append(AsyncRateLimitErrorRetryHandler(max_retry_count=10))
 
     asyncio.run(hello_world(client, CHANNEL_ADMIN))
-    asyncio.run(hello_world(client, CHANNEL_GENERAL))
+    # asyncio.run(hello_world(client, CHANNEL_GENERAL))
 
     # Setup repeated tasks...
     print("Getting tasks...")

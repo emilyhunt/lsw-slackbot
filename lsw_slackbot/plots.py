@@ -253,8 +253,8 @@ async def plot_resource_use(data_location: Path, output_location: Path,
     ax[0].set(ylabel=cpu_aggregation_mode.capitalize() + " CPU usage (%)")
     ax[1].set(xlabel="Time", ylabel=memory_aggregation_mode.capitalize() + " memory usage (GB)",
               xlim=(np.min(unique_times), np.max(unique_times)))
-    ax[2].set(ylabel="Total CPU usage (%)")
-    ax[3].set(xlabel="User", ylabel="Total memory usage (%)")
+    ax[2].set(ylabel="Share of CPU usage (%)")
+    ax[3].set(xlabel="User", ylabel="Share of memory usage (%)")
 
     if end_time is None:
         end_time = datetime.now()
