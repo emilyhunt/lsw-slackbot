@@ -49,13 +49,16 @@ class Periodic:
             with suppress(asyncio.CancelledError):
                 await self._task
 
-    async def _run(self):
-
-        # Work out when we need to run for the first time
+    async def _sleep_until_first_run(self):
+        """Works out if we need to sleep until first_run and sleeps until then for you!"""
         if self.first_run is not None:
             initial_sleep_time = (self.first_run - datetime.datetime.now()).total_seconds()
             if initial_sleep_time > 0:
                 await asyncio.sleep(initial_sleep_time)
+
+    async def _run(self):
+        """Main running loop that handles tasks."""
+        await self._sleep_until_first_run()
 
         # After the optional initial wait... it's time to loop!
         while True:
@@ -89,7 +92,7 @@ class Scheduled(Periodic):
         elif not isinstance(first_run, datetime.datetime):
             raise ValueError("first_run must be a datetime or a dict that can be used to setup a datetime!")
 
-        super().__init__(func, time_interval, first_run, args, kwargs)
+        super().__init__(func, time_interval, first_run=first_run, args=args, kwargs=kwargs)
 
     @staticmethod
     def dict_to_first_run_datetime(first_run_dict):
@@ -133,4 +136,17 @@ class Scheduled(Periodic):
     async def _run(self):
         while True:
             await asyncio.sleep(self._calculate_seconds_to_next_run())
-            await self.func(*self.args, *self.kwargs)
+            await self.func(*self.args, **self.kwargs)
+
+
+class RunOnce(Periodic):
+    """This class also inherits from Periodic. It only runs once! Either immediately or at first_run."""
+    def __init__(self, func: callable, first_run: Optional[datetime.datetime] = None,
+                 args: Union[tuple, list] = tuple(), kwargs: Optional[dict] = None):
+        super().__init__(func, 0, first_run=first_run, args=args, kwargs=kwargs)
+
+    async def _run(self):
+        """Runs a function once after an optional sleep."""
+        await self._sleep_until_first_run()
+
+        await self.func(*self.args, **self.kwargs)

@@ -3,7 +3,7 @@ import asyncio
 import logging
 import socket
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 from slack_sdk.errors import SlackApiError
 
@@ -55,7 +55,7 @@ async def hello_world(client, channel: str):
         client, channel, f"Server time & date: {string_time()}\nApp is running on system {system_name}.")
 
 
-async def send_resource_use_plot(client, channel: str, plot_kwargs: dict, title=None):
+async def send_resource_use_plot(client, channel: str, plot_kwargs: dict, title: Optional[str] = None):
     """Sends a resource usage plot to a given channel."""
 
     if title is None:

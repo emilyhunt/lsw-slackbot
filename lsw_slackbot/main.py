@@ -8,7 +8,7 @@ from slack_sdk.web.async_client import AsyncWebClient
 from slack_sdk.http_retry.builtin_async_handlers import AsyncRateLimitErrorRetryHandler
 
 from .resources import sample_resource_usage
-from .util import string_time, Periodic, Scheduled
+from .util import string_time, Periodic, Scheduled, RunOnce
 from .slack import hello_world, send_resource_use_plot, _send_message, check_memory
 
 # Get Slack tokens from environment variables (app should always be started like this for security reasons)
@@ -59,10 +59,9 @@ def _get_repeated_tasks(client):
                           args=(DATA_DIR,),
                           kwargs={"measurement_time": 55}))
 
-    # Todo I should make a RunOnce handler with the same format as Periodic and Scheduled!
-    tasks.append(Periodic(
+    # Send a test plot to the admin channel once (it's a good test)
+    tasks.append(RunOnce(
         send_resource_use_plot,
-        timedelta(days=10000),
         args=(client,
               CHANNEL_ADMIN,
               {"data_location": DATA_DIR,
@@ -90,7 +89,7 @@ def _get_repeated_tasks(client):
                "tick_format_string_overwrite": "%a %H:%M",
                "minimum_resources_to_plot": (1, 0.1),
                "memory_aggregation_mode": "max"}),
-        kwargs={"title": "Good morning! Here's the server's resource usage from the past 2 days."}))
+        kwargs={"title": "Good morning! Here's the server's resource usage from the past 2 days:"}))
 
     # Send a resource usage plot to the main channel, everything from past week
     tasks.append(Scheduled(
@@ -149,6 +148,7 @@ def client_loop():
     client = AsyncWebClient(token=os.environ['SLACK_API_TOKEN'])
     client.retry_handlers.append(AsyncRateLimitErrorRetryHandler(max_retry_count=10))
 
+    # Send a hello world so that whoever is running the bot knows that it's running
     asyncio.run(hello_world(client, CHANNEL_ADMIN))
     # asyncio.run(hello_world(client, CHANNEL_GENERAL))
 
