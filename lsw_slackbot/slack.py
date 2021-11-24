@@ -49,6 +49,9 @@ async def _send_file(client, channel: str, file: Union[Path, str], title):
 
 async def hello_world(client, channel: str):
     """Basic function to post an init message to a channel."""
+    # Todo: it would be really cool if hello_world also printed the latest commit message.
+    #   This could be done by running the command `git log -1` from Python?
+    #   See https://stackoverflow.com/questions/7293008/display-last-git-commit-comment
     logging.info(f"Saying hello world in {channel}!")
     system_name = socket.gethostname()
     await _send_message(
