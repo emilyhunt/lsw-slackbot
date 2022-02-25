@@ -57,7 +57,7 @@ def _get_repeated_tasks(client):
     # Check up on resource use occasionally
     tasks.append(Periodic(sample_resource_usage, 60,
                           args=(DATA_DIR,),
-                          kwargs={"measurement_time": 55}))
+                          kwargs={"measurement_time": 2, "measurement_cycles": 6, "inter_measurement_time": 8}))
 
     # Send a test plot to the admin channel once (it's a good test)
     tasks.append(RunOnce(

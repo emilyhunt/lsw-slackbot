@@ -15,12 +15,22 @@ from pathlib import Path
 
 
 async def sample_resource_usage(data_dir: Path, filename: Optional[Union[str, Path]] = None,
-                                measurement_time: Union[int, float] = 10):
+                                measurement_time: Union[int, float] = 10, measurement_cycles: int = 1,
+                                inter_measurement_time: Union[int, float] = 0):
     """Samples resource usage and saves it to the data directory."""
     logging.debug("generating a resource usage dataframe")
 
-    # Firstly, let's get it
-    dataframe = await _get_resource_usage_dataframe(measurement_time=measurement_time)
+    # Firstly, let's do a number of measurement cycles
+    dataframe = []
+    for i in range(measurement_cycles):
+        dataframe.append(await _get_resource_usage_dataframe(measurement_time=measurement_time, add_a_time=False))
+        await asyncio.sleep(inter_measurement_time)
+
+    # Now we can combine the multiple measurements...
+    dataframe = pd.concat(dataframe, ignore_index=True)
+    dataframe = dataframe.groupby("username").agg({"cpu_percent": "mean", "memory": "mean", "threads": "mean"})
+
+    dataframe['time'] = datetime.datetime.now()
 
     # ... and save it!
     if filename is None:
@@ -43,7 +53,8 @@ async def sample_resource_usage(data_dir: Path, filename: Optional[Union[str, Pa
     logging.debug("resource usage dataframe successfully saved")
 
 
-async def _get_resource_usage_dataframe(groupby_username: bool = True, measurement_time: Union[int, float] = 10):
+async def _get_resource_usage_dataframe(groupby_username: bool = True, measurement_time: Union[int, float] = 10,
+                                        add_a_time=True):
     """Generates a full resource usage dataframe with usage grouped by user."""
     # Loop over all current processes
     data_dict = {}
@@ -83,9 +94,10 @@ async def _get_resource_usage_dataframe(groupby_username: bool = True, measureme
     dataframe = pd.DataFrame.from_dict(data_dict, orient="index")
 
     if groupby_username:
-        dataframe = dataframe.groupby("username").agg({"cpu_percent": "sum", "memory": "sum", "threads": sum})
+        dataframe = dataframe.groupby("username").agg({"cpu_percent": "sum", "memory": "sum", "threads": "sum"})
 
-    dataframe['time'] = datetime.datetime.now()
+    if add_a_time:
+        dataframe['time'] = datetime.datetime.now()
     return dataframe
 
 
