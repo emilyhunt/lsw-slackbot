@@ -23,14 +23,14 @@ async def sample_resource_usage(data_dir: Path, filename: Optional[Union[str, Pa
     # Firstly, let's do a number of measurement cycles
     dataframe = []
     for i in range(measurement_cycles):
-        dataframe.append(await _get_resource_usage_dataframe(measurement_time=measurement_time, add_a_time=False))
+        a_data = await _get_resource_usage_dataframe(measurement_time=measurement_time, add_a_time=False)
+        dataframe.append(a_data.reset_index())
         await asyncio.sleep(inter_measurement_time)
 
     # Now we can combine the multiple measurements...
     dataframe = pd.concat(dataframe, ignore_index=True)
     dataframe = (dataframe.groupby("username")
-                 .agg({"cpu_percent": "mean", "memory": "mean", "threads": "mean"})
-                 .reset_index())
+                 .agg({"cpu_percent": "mean", "memory": "mean", "threads": "mean"}))
 
     dataframe['time'] = datetime.datetime.now()
 
