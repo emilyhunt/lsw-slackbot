@@ -28,7 +28,9 @@ async def sample_resource_usage(data_dir: Path, filename: Optional[Union[str, Pa
 
     # Now we can combine the multiple measurements...
     dataframe = pd.concat(dataframe, ignore_index=True)
-    dataframe = dataframe.groupby("username").agg({"cpu_percent": "mean", "memory": "mean", "threads": "mean"})
+    dataframe = (dataframe.groupby("username")
+                 .agg({"cpu_percent": "mean", "memory": "mean", "threads": "mean"})
+                 .reset_index())
 
     dataframe['time'] = datetime.datetime.now()
 
